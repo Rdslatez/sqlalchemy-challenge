@@ -105,12 +105,14 @@ app = Flask(__name__)
 #################################################
 @app.route("/")
 def home():
+    #Homepage
     print("Welcome to my class homepage!")
     return(f"Welcome!<br/>"
         f"Available Routes:<br/>"
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
+        #Gives a format for the api
         f"Date format for start and/or end below: yyyy-mm-dd<br/>"
         f"/api/v1.0/start<br/>"
         f"/api/v1.0/start/end<br/>"
@@ -119,11 +121,18 @@ def home():
 
 @app.route("/api/v1.0/precipitation")
 def precip():
-    dict1 = df.to_dict()
+    #Queries the data needed, just as per the earlier
+    info = session.query(Measurements.date, Measurements.prcp).filter(Measurements.date >= '2016-08-23', Measurements.date <= '2017-08-23').all()
+    #converts to dataframe for easy conversion to dictionary
+    data_f = pd.DataFrame(info)
+    #convers to dictionary
+    dict1 = data_f.to_dict()
+    #returns json dictionary
     return jsonify(dict1)
 
 @app.route("/api/v1.0/stations")
 def stati():
+   #Query to find all stations
    temp = session.query(Stations.station).all()
    tempdf = pd.DataFrame(temp)
    station_list = tempdf.values.tolist()
@@ -131,25 +140,39 @@ def stati():
 
 @app.route("/api/v1.0/tobs")
 def tobs():
+    #initial query, getting tobs based on the dates aquired earlier in the work
     tobs_sess = session.query(Measurements.date, Measurements.tobs).filter(Measurements.date >= '2016-08-18', Measurements.date <= '2017-08-18', Measurements.station == 'USC00519281').all()
+    #converts to dataframe, easy to make into a list
     tobs_df = pd.DataFrame(tobs_sess)
+    #converts to list
     tobs_list = tobs_df.values.tolist()
+    #returns json
     return jsonify(tobs_list)
 
 @app.route(f"/api/v1.0/<start>")
 def starts(start):
+    #initial query, getting tobs based on the dates entered into the api
     start_sess = session.query(Measurements.tobs).filter(Measurements.date >= start).group_by(Measurements.date).all()
+    #converts to a dataframe for easy calculations
     start_df = pd.DataFrame(start_sess)
-    start_df = start_df.agg(['min','max','mean'])
+    #aggregates for min, mean and max
+    start_df = start_df.agg(['min','mean','max'])
+    #converts to a list for json
     start_list = start_df.values.tolist()
+    #returns json
     return jsonify(start_list)
 
 @app.route(f"/api/v1.0/<start>/<end>")
 def full(start, end):
+    #initial query, getting tobs based on the dates entered into the api
     entire = session.query(Measurements.tobs).filter(Measurements.date >= start, Measurements.date <= end).group_by(Measurements.date).all()
+    #converts to a dataframe for easy calculations
     entire_df = pd.DataFrame(entire)
-    entire_df = entire_df.agg(['min','max','mean'])
+    #aggregates for min, mean and max
+    entire_df = entire_df.agg(['min','mean','max'])
+    #converts to a list for json
     entire_list = entire_df.values.tolist()
+    #returns json
     return jsonify(entire_list)
 
 
